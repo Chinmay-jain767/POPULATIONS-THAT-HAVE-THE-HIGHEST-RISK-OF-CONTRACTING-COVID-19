@@ -35,6 +35,105 @@ def predict_note_authentication(Breathing_Problem,Fever,Dry_Cough,Sore_throat,Hy
 
 
 def main():
+
+
+    html_temp = """
+            <div style="padding:10px;">
+            <center>
+           <img src='https://user-images.githubusercontent.com/50532530/125352577-10f86c80-e37f-11eb-8a69-71de3a5a1aa3.jpg' width='512' height='300'  style="align:center;">
+           </center>
+            </div>
+            <br>
+            """
+    st.markdown(html_temp,unsafe_allow_html=True)
+    st.set_option('deprecation.showfileUploaderEncoding', False)
+    st.title("RECOMMENDING RESTRICTIONS FOR GIVEN COUNTRY")
+
+    @st.cache(allow_output_mutation=True)
+
+    def restrictions(i):
+        data= df[df["CountryName"]==i].reset_index()
+        data.drop(['index','CountryName'],axis=1,inplace=True)
+        data["newcases"]= data["ConfirmedCases"]-data["ConfirmedCases"].shift( periods=1)
+        data.at[0,'newcases']=data["ConfirmedCases"].values[0]
+        data.set_index('Date',inplace=True)
+        data = data[columns]
+        col = columns[1:]
+        last_day = data.index[-1]
+        fcol = []
+        for j in col:
+            if data.loc[last_day,j] == 0:
+                data.drop(j,axis=1)
+            else:
+                fcol.append(j[14:-4])
+        fcol = set(fcol)
+        return fcol
+
+
+
+    def load_model():
+        data1=pd.read_csv("Clusters.csv")
+        df=pd.read_csv("COVID_gov_complete_29_03.csv",index_col=0)
+        return data1,df
+
+    with st.spinner('Loading Model Into Memory....'):
+    
+        data1,df = load_model()
+        clusterwise_country=['Greece','Canada','Barbados','Angola','Mexico','Zimbabwe','Iceland']
+        columns=['newcases', 
+            'Days_since_S1_School closing_1.0', 
+            'Days_since_S1_School closing_2.0',
+            'Days_since_S2_Workplace closing_1.0',
+            'Days_since_S2_Workplace closing_2.0',
+            'Days_since_S3_Cancel public events_1.0',
+            'Days_since_S3_Cancel public events_2.0',
+            'Days_since_S4_Close public transport_1.0',
+            'Days_since_S4_Close public transport_2.0',
+            'Days_since_S5_Public information campaigns_1.0',
+            'Days_since_S6_Restrictions on internal movement_1.0',
+            'Days_since_S6_Restrictions on internal movement_2.0',
+            'Days_since_S7_International travel controls_1.0',
+            'Days_since_S7_International travel controls_2.0',
+            'Days_since_S7_International travel controls_3.0',]
+
+        texts = st.text_input('Enter country name ...')
+
+    if texts:
+        try:
+            texts=texts.lower()
+            texts=texts[0].upper()+texts[1:]
+            st.write("Response :")
+            with st.spinner('Searching for answers.....'):
+                n=np.array(data1[data1["Country/Region"]==texts]["clusters"])[0]
+                final=restrictions(clusterwise_country[n])
+                html_temp = """
+            <div style="background-color:tomato;padding:10px">
+            <h2 style="color:white;text-align:center;">These are the restrictions suggested to control increase in the number of cases: </h2>
+            </div>
+            <br>
+            """
+                st.markdown(html_temp,unsafe_allow_html=True)
+                #st.write(html_temp)
+                for i in final:
+                    st.write(i) 
+                    st.write("-------------------------------------------")
+        except:
+            st.write("Enter a valid country name")
+            st.write("-------------------------------------------")
+
+
+    html_temp = """
+            <div style="padding:10px;">
+            <center>
+           <a><img src='https://user-images.githubusercontent.com/50532530/125205463-01eebd00-e2a0-11eb-86e8-c6cdedb8ecda.png' ></a>
+           
+          
+           </center>
+            </div>
+            <br>
+            """
+    st.markdown(html_temp,unsafe_allow_html=True)
+
     st.title("POPULATIONS THAT HAVE THE ​HIGHEST RISK OF ​CONTRACTING COVID-19")
     html_temp = """
     <div style="background-color:tomato;padding:10px">
@@ -60,6 +159,8 @@ def main():
     if st.button("About"):
         st.text("More solution ")
         st.text("Comming soon")
+
+    
 
 if __name__=='__main__':
     main()
